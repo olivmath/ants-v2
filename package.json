@@ -16,8 +16,8 @@
     "build:optimized": "FOUNDRY_PROFILE=optimized forge build",
     "coverage": "forge coverage --report summary --report lcov --match-path 'test/unit/*'",
     "deploy:sepolia": "bash -c 'source .env && forge script Deploy --rpc-url $SEPOLIA_RPC --account $SEPOLIA_DEPLOYER_NAME --broadcast --verify --chain sepolia -vvvvv'",
-    "lint:check": "yarn lint:sol && forge fmt --check",
-    "lint:fix": "sort-package-json && forge fmt && yarn lint:sol --fix",
+    "lint:check": "pnpm lint:sol && forge fmt --check",
+    "lint:fix": "sort-package-json && forge fmt && pnpm lint:sol --fix",
     "lint:natspec": "npx @defi-wonderland/natspec-smells --config natspec-smells.config.js",
     "lint:sol": "solhint 'src/**/*.sol' 'script/**/*.sol' 'test/**/*.sol'",
     "prepare": "husky",
@@ -25,7 +25,7 @@
   },
   "lint-staged": {
     "*.{js,css,md,ts,sol}": "forge fmt",
-    "(src|test|script)/**/*.sol": "yarn lint:sol",
+    "(src|test|script)/**/*.sol": "pnpm lint:sol",
     "package.json": "sort-package-json"
   },
   "devDependencies": {
@@ -33,7 +33,7 @@
     "@commitlint/config-conventional": "19.2.2",
     "@defi-wonderland/natspec-smells": "1.1.3",
     "@openzeppelin/contracts": "5.0.2",
-    "forge-std": "github:foundry-rs/forge-std#1.9.2",
+    "forge-std": "github:foundry-rs/forge-std#v1.9.2",
     "husky": ">=9",
     "lint-staged": ">=10",
     "solhint-community": "4.0.0",
