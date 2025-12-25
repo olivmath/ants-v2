@@ -116,3 +116,10 @@ Implementei sistema completo onde formigas podem colocar ovos periodicamente:
 - Struct packing: 64 bits em slot de 256 bits (economia de 4x)
 - Single SLOAD: usa `storage` pointer para ler struct uma vez
 - Early return quando formiga morre (não calcula ovos)
+
+
+# 11 correção manual do código gerado por AI
+- má organização principalmente do rastreio das formigas e duplicação de código desnecessária
+
+# 12 remoção da lib de matemática
+- desnecessário pois solidity 0.8+ é seguro em overflow e underflow`

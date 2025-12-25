@@ -20,6 +20,7 @@ import {ReentrancyGuard} from '@openzeppelin/utils/ReentrancyGuard.sol';
 
 interface IEgg is IERC20 {
   function mint(address, uint256) external;
+  function burnFrom(address, uint256) external;
 }
 
 interface ICryptoAnts is IERC721 {
@@ -69,9 +70,8 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
   function buyEggs(uint256 _amount) external payable override nonReentrant {
     // (safe in Solidity 0.8+)
     uint256 totalCost = _amount * eggPrice;
-    int256 diff = msg.value - totalCost;
-
-    if (diff < 0) revert InsufficientEtherSent();
+    if (msg.value < totalCost) revert InsufficientEtherSent();
+    uint256 diff = msg.value - totalCost;
 
     try EGGS.mint(msg.sender, _amount) {}
     catch (bytes memory err) {
