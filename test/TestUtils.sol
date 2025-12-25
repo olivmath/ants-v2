@@ -13,14 +13,19 @@ contract TestUtils {
     if (_nonce == 0x00) {
       _data = abi.encodePacked(bytes1(0xd6), bytes1(0x94), _origin, bytes1(0x80));
     } else if (_nonce <= 0x7f) {
+      // forge-lint: disable-next-line(unsafe-typecast)
       _data = abi.encodePacked(bytes1(0xd6), bytes1(0x94), _origin, uint8(_nonce));
     } else if (_nonce <= 0xff) {
+      // forge-lint: disable-next-line(unsafe-typecast)
       _data = abi.encodePacked(bytes1(0xd7), bytes1(0x94), _origin, bytes1(0x81), uint8(_nonce));
     } else if (_nonce <= 0xffff) {
+      // forge-lint: disable-next-line(unsafe-typecast)
       _data = abi.encodePacked(bytes1(0xd8), bytes1(0x94), _origin, bytes1(0x82), uint16(_nonce));
     } else if (_nonce <= 0xffffff) {
+      // forge-lint: disable-next-line(unsafe-typecast)
       _data = abi.encodePacked(bytes1(0xd9), bytes1(0x94), _origin, bytes1(0x83), uint24(_nonce));
     } else {
+      // forge-lint: disable-next-line(unsafe-typecast)
       _data = abi.encodePacked(bytes1(0xda), bytes1(0x94), _origin, bytes1(0x84), uint32(_nonce));
     }
 

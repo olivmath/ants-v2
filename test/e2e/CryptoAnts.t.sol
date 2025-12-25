@@ -2,7 +2,6 @@
 pragma solidity >=0.8.4 <0.9.0;
 
 import {Test} from 'forge-std/Test.sol';
-import {console} from 'forge-std/console.sol';
 import {CryptoAnts, ICryptoAnts} from 'src/CryptoAnts.sol';
 import {Egg, IEgg} from 'src/Egg.sol';
 import {TestUtils} from 'test/TestUtils.sol';

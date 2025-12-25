@@ -39,3 +39,23 @@ Corrigi a vulnerabilidade crítica na função `buyEggs`:
 - Corrigi o evento para emitir a quantidade correta (`_amount` em vez de `eggsCallerCanBuy`)
 - Instalei biblioteca `@prb/math` para futuras operações matemáticas complexas
 - Proteção contra overflow garantida pelo Solidity 0.8.x
+
+# 7 Correção de warnings do linter Forge
+
+Corrigi todos os warnings reportados pelo linter do Forge:
+- **Named imports**: Mudei todos os plain imports para named imports (ex: `import {Ownable} from '@openzeppelin/...'`)
+- **Unused imports**: Removi imports não utilizados (`console.sol` em CryptoAnts.sol e CryptoAnts.t.sol)
+- **Mixed-case variables**: Renomeei `__ants` para `antsAddress` no construtor do Egg.sol
+- **Immutable naming**: Renomeei variável `eggs` para `EGGS` (SCREAMING_SNAKE_CASE para immutables)
+- **Unsafe typecasts**: Adicionei comentários `forge-lint: disable-next-line` nos typecasts em TestUtils.sol
+- **Ordering**: Reorganizei ordem das declarações de estado (immutables primeiro)
+- Resultado: Build limpo sem warnings de linter
+
+# 8 Substituição de require por custom errors
+
+Substituí todos os statements `require` por `revert` com custom errors:
+- Adicionei custom errors: `RefundFailed()`, `Unauthorized()`, `TransferFailed()`
+- `buyEggs`: Substituí `require(success, 'Refund failed')` por `if (!success) revert RefundFailed()`
+- `sellAnt`: Substituí `require(antToOwner[_antId] == msg.sender, 'Unauthorized')` por `if (antToOwner[_antId] != msg.sender) revert Unauthorized()`
+- `sellAnt`: Substituí `require(success, 'Whoops, this call failed!')` por `if (!success) revert TransferFailed()`
+- Economia de gas: custom errors são mais eficientes que strings em require

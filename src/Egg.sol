@@ -1,5 +1,5 @@
-import '@openzeppelin/token/ERC20/ERC20.sol';
-import '@openzeppelin/token/ERC20/IERC20.sol';
+import {ERC20} from '@openzeppelin/token/ERC20/ERC20.sol';
+import {IERC20} from '@openzeppelin/token/ERC20/IERC20.sol';
 
 interface IEgg is IERC20 {
   function mint(address, uint256) external;
@@ -11,8 +11,8 @@ pragma solidity >=0.8.4 <0.9.0;
 contract Egg is ERC20, IEgg {
   address private _ants;
 
-  constructor(address __ants) ERC20('EGG', 'EGG') {
-    _ants = __ants;
+  constructor(address antsAddress) ERC20('EGG', 'EGG') {
+    _ants = antsAddress;
   }
 
   function mint(address _to, uint256 _amount) external override {
