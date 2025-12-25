@@ -68,3 +68,51 @@ Implementei melhorias na segurança e lógica do jogo:
 - Isso garante que criar uma ant realmente custa 1 egg (antes só verificava balance mas não queimava)
 - Adicionei verificação de sucesso no transferFrom
 - Custom error `MintFailed()` para melhor tratamento de erros
+
+# 10 Implementação de mecânica de postura de ovos (Egg-Laying)
+
+Implementei sistema completo onde formigas podem colocar ovos periodicamente:
+
+**Estrutura de Dados:**
+- Criada struct `Ant` com packing otimizado (1 slot de storage):
+  - `uint40 lastEggLayTime`: timestamp da última postura (válido até ano 2106)
+  - `uint16 totalEggsLaid`: contador total de ovos colocados
+  - `bool isAlive`: status de vida da formiga
+- Novo mapping `ants` para armazenar dados por formiga
+- Constante `EGG_LAY_COOLDOWN = 600` (10 minutos em segundos)
+
+**Função layEggs():**
+- Cooldown de 10 minutos entre posturas
+- Quantidade de ovos: 0-20 com distribuição triangular (aproxima curva normal, favorece ~10)
+- 10% de chance de morte ao colocar ovos
+- Quando morre: formiga é queimada (burn do NFT) e não produz ovos
+- Proteção contra reentrancy com `nonReentrant`
+- Backward compatibility: formigas antigas inicializadas lazy na primeira chamada
+
+**RNG (Random Number Generation):**
+- `_generateRandomNumber()`: usa block.prevrandao + timestamp + antId + nonce + msg.sender
+- `_getNormalDistributedEggs()`: distribuição triangular (média de 2 uniformes 0-20)
+- Não é criptograficamente seguro mas adequado para mecânicas de jogo
+
+**Modificações em createAnt():**
+- Inicializa struct Ant ao criar formiga
+- `lastEggLayTime` definido como `block.timestamp` para cooldown inicial
+- `isAlive` definido como `true`
+
+**Modificações em sellAnt():**
+- Verifica se formiga está viva antes de vender
+- Marca formiga como morta antes de queimar
+- **Correção de bug**: `if (isok)` → `if (!isok)` para tratamento correto de erro de pagamento
+
+**Eventos:**
+- `EggsLaid(antId, owner, eggCount)`: emitido quando ovos são colocados
+- `AntDied(antId, owner)`: emitido quando formiga morre
+
+**Erros:**
+- `CooldownNotMet()`: tentativa de colocar ovos antes do cooldown
+- `AntIsDead()`: tentativa de usar formiga morta
+
+**Otimizações de Gas:**
+- Struct packing: 64 bits em slot de 256 bits (economia de 4x)
+- Single SLOAD: usa `storage` pointer para ler struct uma vez
+- Early return quando formiga morre (não calcula ovos)
