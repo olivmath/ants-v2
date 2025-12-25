@@ -1,6 +1,10 @@
 name: CI
 
-on: [push]
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
@@ -8,39 +12,214 @@ concurrency:
 
 env:
   SEPOLIA_RPC: https://ethereum-sepolia-rpc.publicnode.com
+  FOUNDRY_PROFILE: ci
 
 jobs:
-  test:
-    name: Run E2E Tests
+  # ============================================
+  # Unit Tests with Coverage
+  # ============================================
+  coverage:
+    name: 📊 Unit Tests & Coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
 
-      - name: Use Node.js
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20.x
-          cache: 'yarn'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: yarn --frozen-lockfile --network-concurrency 1
+        run: pnpm install --frozen-lockfile
 
-      - name: Precompile
-        run: yarn build
+      - name: Run unit tests
+        run: forge test --match-path "test/unit/*.t.sol" -vvv
 
-      - name: Run tests
-        shell: bash
-        run: yarn test
+      - name: Generate coverage report
+        run: forge coverage --report summary --report lcov --match-path "test/unit/*.t.sol"
 
-  lint:
-    name: Lint Commit Messages
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./lcov.info
+          flags: unit-tests
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  # ============================================
+  # E2E / BDD Tests
+  # ============================================
+  e2e:
+    name: 🎭 E2E / BDD Tests
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run E2E tests
+        run: forge test --match-path "test/e2e/*.t.sol" -vvv
+
+      - name: Generate gas report
+        run: forge test --match-path "test/e2e/*.t.sol" --gas-report
+
+  # ============================================
+  # Fuzz Tests (Property-Based Testing)
+  # ============================================
+  fuzz:
+    name: 🎲 Fuzz Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        runs: [256, 1000]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run fuzz tests (${{ matrix.runs }} runs)
+        run: forge test --match-path "test/fuzz/*.t.sol" --fuzz-runs ${{ matrix.runs }} -vvv
+
+  # ============================================
+  # Formal Verification (Halmos)
+  # ============================================
+  formal:
+    name: 🔐 Formal Verification (Halmos)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Halmos
+        run: pip install halmos
+
+      - name: Build contracts
+        run: forge build
+
+      - name: Run Halmos formal verification
+        run: halmos --contract CryptoAntsFormalTest --solver-timeout-assertion 120
+        continue-on-error: true
+
+  # ============================================
+  # Linting
+  # ============================================
+  lint:
+    name: 🧹 Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run linters
+        run: pnpm lint:check
+
+      - name: Check Solidity formatting
+        run: forge fmt --check
+
+  # ============================================
+  # Commit Lint
+  # ============================================
+  commitlint:
+    name: 📝 Commit Lint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,18 +227,65 @@ jobs:
 
       - uses: wagoid/commitlint-github-action@v5
 
+  # ============================================
+  # Build Check
+  # ============================================
+  build:
+    name: 🏗️ Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
 
-      - name: Use Node.js
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20.x
-          cache: 'yarn'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: yarn --frozen-lockfile --network-concurrency 1
+        run: pnpm install --frozen-lockfile
 
-      - run: yarn lint:check
+      - name: Build contracts
+        run: forge build --sizes
+
+      - name: Check contract sizes
+        run: forge build --sizes | grep -E "Contract|Total"
+
+  # ============================================
+  # All Tests Summary
+  # ============================================
+  test-summary:
+    name: ✅ Test Summary
+    runs-on: ubuntu-latest
+    needs: [coverage, e2e, fuzz, formal, lint, build]
+    if: always()
+    steps:
+      - name: Check test results
+        run: |
+          echo "Coverage: ${{ needs.coverage.result }}"
+          echo "E2E Tests: ${{ needs.e2e.result }}"
+          echo "Fuzz Tests: ${{ needs.fuzz.result }}"
+          echo "Formal Verification: ${{ needs.formal.result }}"
+          echo "Lint: ${{ needs.lint.result }}"
+          echo "Build: ${{ needs.build.result }}"
+
+      - name: Fail if any critical job failed
+        if: |
+          needs.coverage.result == 'failure' ||
+          needs.e2e.result == 'failure' ||
+          needs.fuzz.result == 'failure' ||
+          needs.lint.result == 'failure' ||
+          needs.build.result == 'failure'
+        run: exit 1

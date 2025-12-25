@@ -24,6 +24,12 @@ out = 'out-via-ir'
 [profile.docs]
 src = 'src/interfaces/'
 
+[profile.ci]
+fuzz.runs = 256
+verbosity = 2
+show_progress = true
+gas_reports = ["*"]
+
 [fuzz]
 runs = 1000
 

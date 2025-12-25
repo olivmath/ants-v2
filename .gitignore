@@ -2,10 +2,14 @@
 yarn-error.log
 node_modules
 .DS_STORE
+.venv
+dapp/
 
 # Foundry files
 cache
 out-via-ir
+lcov.info
+coverage/
 
 # Config files
 .env
