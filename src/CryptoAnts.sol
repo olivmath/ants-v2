@@ -1,7 +1,7 @@
 // TODO: [x] Work on storage padding
 // TODO: [ ] Circular deployment, since we need to pass this contract's address to build the Egg
 // TODO: [x] Maybe this variable is not necessary
-// TODO: [ ] This calculation is unsafe
+// TODO: [x] This calculation is unsafe
 // TODO: [ ] Need a check to know if the mint call reverted
 // TODO: [ ] Need a check to see if the user has enough eggs
 // TODO: [ ] This code looks weird and spaghetti-like
@@ -14,6 +14,7 @@ import '@openzeppelin/token/ERC20/IERC20.sol';
 import '@openzeppelin/token/ERC721/ERC721.sol';
 import '@openzeppelin/token/ERC721/IERC721.sol';
 import '@openzeppelin/utils/ReentrancyGuard.sol';
+import {mulDiv} from '@prb/math/src/Common.sol';
 import 'forge-std/console.sol';
 
 interface IEgg is IERC20 {
@@ -56,10 +57,20 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
   }
 
   function buyEggs(uint256 _amount) external payable override nonReentrant {
-    uint256 _eggPrice = eggPrice;
-    uint256 eggsCallerCanBuy = (msg.value / _eggPrice);
+    // Use PRB-Math mulDiv for safe multiplication: totalCost = (_amount * eggPrice) / 1
+    uint256 totalCost = mulDiv(_amount, eggPrice, 1);
+    if (msg.value < totalCost) revert WrongEtherSent();
+
     eggs.mint(msg.sender, _amount);
-    emit EggsBought(msg.sender, eggsCallerCanBuy);
+
+    // Refund excess ether
+    uint256 refund = msg.value - totalCost;
+    if (refund > 0) {
+      (bool success,) = msg.sender.call{value: refund}('');
+      require(success, 'Refund failed');
+    }
+
+    emit EggsBought(msg.sender, _amount);
   }
 
   function createAnt() external {

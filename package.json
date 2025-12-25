@@ -28,6 +28,9 @@
     "(src|test|script)/**/*.sol": "pnpm lint:sol",
     "package.json": "sort-package-json"
   },
+  "dependencies": {
+    "@prb/math": "^4.1.0"
+  },
   "devDependencies": {
     "@commitlint/cli": "19.3.0",
     "@commitlint/config-conventional": "19.2.2",

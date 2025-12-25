@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@prb/math':
+        specifier: ^4.1.0
+        version: 4.1.0
     devDependencies:
       '@commitlint/cli':
         specifier: 19.3.0
@@ -140,6 +144,9 @@ packages:
 
   '@openzeppelin/contracts@5.0.2':
     resolution: {integrity: sha512-ytPc6eLGcHHnapAZ9S+5qsdomhjo6QBHTDRRBFfTxXIpsicMhVPouPgmUPebZZZGX7vt9USA+Z+0M0dSVtSUEA==}
+
+  '@prb/math@4.1.0':
+    resolution: {integrity: sha512-ef5Xrlh3BeX4xT5/Wi810dpEPq2bYPndRxgFIaKSU1F/Op/s8af03kyom+mfU7gEpvfIZ46xu8W0duiHplbBMg==}
 
   '@scure/base@1.1.9':
     resolution: {integrity: sha512-8YKhl8GHiNI/pU2VMaofa2Tor7PJRAjwQLBBuilkJ9L5+13yVbC7JO/wS7piioAvPSwR3JKM1IJ/u4xQzbcXKg==}
@@ -1330,6 +1337,8 @@ snapshots:
       fastq: 1.20.1
 
   '@openzeppelin/contracts@5.0.2': {}
+
+  '@prb/math@4.1.0': {}
 
   '@scure/base@1.1.9': {}
 

@@ -28,3 +28,14 @@ Melhorei a segurança contra reentrancy usando o padrão do OpenZeppelin:
 - Removi o modifier `lock()` que tinha lógica manual
 - Economia adicional de 2 slots de storage (64 bytes) das variáveis removidas
 - Maior segurança usando biblioteca battle-tested
+
+# 6 Correção do cálculo inseguro em buyEggs
+
+Corrigi a vulnerabilidade crítica na função `buyEggs`:
+- **Problema**: A função calculava `eggsCallerCanBuy` mas mintava `_amount`, permitindo comprar qualquer quantidade sem pagar
+- Adicionei validação do valor enviado: `totalCost = _amount * eggPrice`
+- Adicionei verificação `if (msg.value < totalCost) revert WrongEtherSent()`
+- Implementei refund automático do ether excedente
+- Corrigi o evento para emitir a quantidade correta (`_amount` em vez de `eggsCallerCanBuy`)
+- Instalei biblioteca `@prb/math` para futuras operações matemáticas complexas
+- Proteção contra overflow garantida pelo Solidity 0.8.x
