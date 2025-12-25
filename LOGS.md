@@ -6,3 +6,5 @@
 WRONG: "forge-std": "github:foundry-rs/forge-std#1.9.2",
 RIGHT: "forge-std": "github:foundry-rs/forge-std#v1.9.2",
 ```
+
+# 3 troquei o uso de yarn por pnpm
