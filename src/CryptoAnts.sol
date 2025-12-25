@@ -1,21 +1,23 @@
+//SPDX-License-Identifier: Unlicense
+pragma solidity >=0.8.4 <0.9.0;
+
 // TODO: [x] Work on storage padding
-// TODO: [ ] Circular deployment, since we need to pass this contract's address to build the Egg
 // TODO: [x] Maybe this variable is not necessary
 // TODO: [x] This calculation is unsafe
-// TODO: [ ] Need a check to know if the mint call reverted
-// TODO: [ ] Need a check to see if the user has enough eggs
+// TODO: [x] Need a check to know if the mint call reverted
+// TODO: [x] Need a check to see if the user has enough eggs
+// TODO: [x] Replace requires with reverts+error
+// TODO: [x] solhint-disable-next-line
+// TODO: [ ] Circular deployment, since we need to pass this contract's address to build the Egg
 // TODO: [ ] This code looks weird and spaghetti-like
-// TODO: [ ] Replace requires with reverts+error
-// TODO: [ ] solhint-disable-next-line
 // TODO: [ ] This does not work "delete"
 
-import '@openzeppelin/access/Ownable.sol';
-import '@openzeppelin/token/ERC20/IERC20.sol';
-import '@openzeppelin/token/ERC721/ERC721.sol';
-import '@openzeppelin/token/ERC721/IERC721.sol';
-import '@openzeppelin/utils/ReentrancyGuard.sol';
+import {Ownable} from '@openzeppelin/access/Ownable.sol';
+import {IERC20} from '@openzeppelin/token/ERC20/IERC20.sol';
+import {ERC721} from '@openzeppelin/token/ERC721/ERC721.sol';
+import {IERC721} from '@openzeppelin/token/ERC721/IERC721.sol';
+import {ReentrancyGuard} from '@openzeppelin/utils/ReentrancyGuard.sol';
 import {mulDiv} from '@prb/math/src/Common.sol';
-import 'forge-std/console.sol';
 
 interface IEgg is IERC20 {
   function mint(address, uint256) external;
@@ -23,33 +25,28 @@ interface IEgg is IERC20 {
 
 interface ICryptoAnts is IERC721 {
   event EggsBought(address, uint256);
+  event AntCreated();
+  event AntSold();
 
   function buyEggs(uint256) external payable;
 
-  error NoEggs();
-
-  event AntSold();
-
-  error NoZeroAddress();
-
-  event AntCreated();
-
-  error AlreadyExists();
   error WrongEtherSent();
+  error NoZeroAddress();
+  error AlreadyExists();
+  error Unauthorized();
+  error RefundFailed();
+  error NoEggs();
 }
 
-//SPDX-License-Identifier: Unlicense
-pragma solidity >=0.8.4 <0.9.0;
-
 contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
+  IEgg public immutable EGGS;
   uint256 public eggPrice = 0.01 ether;
   uint256 public antsCreated = 0;
   mapping(uint256 => address) public antToOwner;
   uint256[] public allAntsIds;
-  IEgg public immutable eggs;
 
   constructor(address _eggs) ERC721('Crypto Ants', 'ANTS') Ownable(msg.sender) {
-    eggs = IEgg(_eggs);
+    EGGS = IEgg(_eggs);
   }
 
   function setEggPrice(uint256 _price) external onlyOwner {
@@ -61,20 +58,20 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
     uint256 totalCost = mulDiv(_amount, eggPrice, 1);
     if (msg.value < totalCost) revert WrongEtherSent();
 
-    eggs.mint(msg.sender, _amount);
+    EGGS.mint(msg.sender, _amount);
 
     // Refund excess ether
     uint256 refund = msg.value - totalCost;
     if (refund > 0) {
       (bool success,) = msg.sender.call{value: refund}('');
-      require(success, 'Refund failed');
+      if (!success) revert RefundFailed();
     }
 
     emit EggsBought(msg.sender, _amount);
   }
 
   function createAnt() external {
-    if (eggs.balanceOf(msg.sender) < 1) revert NoEggs();
+    if (EGGS.balanceOf(msg.sender) < 1) revert NoEggs();
     uint256 _antId = ++antsCreated;
     for (uint256 i = 0; i < allAntsIds.length; i++) {
       if (allAntsIds[i] == _antId) revert AlreadyExists();
@@ -86,9 +83,17 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
   }
 
   function sellAnt(uint256 _antId) external {
-    require(antToOwner[_antId] == msg.sender, 'Unauthorized');
-    (bool success,) = msg.sender.call{value: 0.004 ether}('');
-    require(success, 'Whoops, this call failed!');
+    if (antToOwner[_antId] != msg.sender) revert Unauthorized();
+
+    (bool isok, bytes memory data) = msg.sender.call{value: 0.004 ether}('');
+    if (isok) {
+      assembly {
+        let ptr := add(data, 0x20)
+        let len := mload(ptr)
+        revert(ptr, len)
+      }
+    }
+
     delete antToOwner[_antId];
     _burn(_antId);
   }
