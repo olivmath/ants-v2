@@ -122,6 +122,14 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
     _mint(msg.sender, _antId);
     antToOwner[_antId] = msg.sender;
     allAntsIds.push(_antId);
+
+    // Initialize ant data
+    ants[_antId] = Ant({
+      lastEggLayTime: uint40(block.timestamp), // Cooldown starts now
+      totalEggsLaid: 0,
+      isAlive: true
+    });
+
     emit AntCreated();
   }
 
