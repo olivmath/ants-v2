@@ -37,6 +37,7 @@
     "@defi-wonderland/natspec-smells": "1.1.3",
     "@openzeppelin/contracts": "5.0.2",
     "forge-std": "github:foundry-rs/forge-std#v1.9.2",
+    "halmos-cheatcodes": "github:a16z/halmos-cheatcodes",
     "husky": ">=9",
     "lint-staged": ">=10",
     "solhint-community": "4.0.0",

@@ -27,6 +27,9 @@ importers:
       forge-std:
         specifier: github:foundry-rs/forge-std#v1.9.2
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/1714bee72e286e73f76e320d110e0eaf5c4e649d
+      halmos-cheatcodes:
+        specifier: github:a16z/halmos-cheatcodes
+        version: https://codeload.github.com/a16z/halmos-cheatcodes/tar.gz/6da4e692c357ba6d641a2e677a28298cac9f76ab
       husky:
         specifier: '>=9'
         version: 9.1.7
@@ -583,6 +586,10 @@ packages:
 
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
+
+  halmos-cheatcodes@https://codeload.github.com/a16z/halmos-cheatcodes/tar.gz/6da4e692c357ba6d641a2e677a28298cac9f76ab:
+    resolution: {tarball: https://codeload.github.com/a16z/halmos-cheatcodes/tar.gz/6da4e692c357ba6d641a2e677a28298cac9f76ab}
+    version: 0.0.0
 
   has-flag@4.0.0:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
@@ -1788,6 +1795,8 @@ snapshots:
   gopd@1.2.0: {}
 
   graceful-fs@4.2.11: {}
+
+  halmos-cheatcodes@https://codeload.github.com/a16z/halmos-cheatcodes/tar.gz/6da4e692c357ba6d641a2e677a28298cac9f76ab: {}
 
   has-flag@4.0.0: {}
 

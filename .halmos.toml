@@ -1,0 +1,16 @@
+# Halmos Configuration
+# https://github.com/a16z/halmos
+
+[halmos]
+# Symbolic execution parameters
+loop = 3               # Maximum loop iterations
+width = 256            # Bit-width for symbolic values
+depth = 100            # Maximum function call depth
+
+# Solver configuration
+solver-timeout = 60    # Solver timeout in seconds
+solver-threads = 4     # Number of solver threads
+
+# Output
+verbose = 1            # Verbosity level (0-3)
+statistics = true      # Show statistics

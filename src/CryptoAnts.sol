@@ -30,8 +30,16 @@ interface ICryptoAnts is IERC721 {
   event EggsLaid(uint256 indexed antId, address indexed owner, uint256 eggCount);
   event AntDied(uint256 indexed antId, address indexed owner);
 
+  function antsMetadata(uint256) external view returns (uint40, uint16, bool);
+  function getContractBalance() external view returns (uint256);
+  function getAntsCreated() external view returns (uint256);
+  function eggPrice() external view returns (uint256);
+
+  function setEggPrice(uint256 _price) external;
   function buyEggs(uint256) external payable;
+  function sellAnt(uint256 _antId) external;
   function layEggs(uint256 _antId) external;
+  function createAnt() external;
 
   error InsufficientEggs();
   error FailedToBurnEgg();
