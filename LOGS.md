@@ -59,3 +59,12 @@ Substituí todos os statements `require` por `revert` com custom errors:
 - `sellAnt`: Substituí `require(antToOwner[_antId] == msg.sender, 'Unauthorized')` por `if (antToOwner[_antId] != msg.sender) revert Unauthorized()`
 - `sellAnt`: Substituí `require(success, 'Whoops, this call failed!')` por `if (!success) revert TransferFailed()`
 - Economia de gas: custom errors são mais eficientes que strings em require
+
+# 9 Adição de verificação de mint e burn de eggs ao criar ant
+
+Implementei melhorias na segurança e lógica do jogo:
+- **buyEggs**: Adicionei `try/catch` para capturar falhas no mint e reverter com `MintFailed()`
+- **createAnt**: Adicionei queima de 1 egg usando `transferFrom` para transferir do usuário para o contrato
+- Isso garante que criar uma ant realmente custa 1 egg (antes só verificava balance mas não queimava)
+- Adicionei verificação de sucesso no transferFrom
+- Custom error `MintFailed()` para melhor tratamento de erros
