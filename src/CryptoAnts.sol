@@ -102,7 +102,8 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
     }
 
     uint256 _antId = ++antsCreated;
-    for (uint256 i = 0; i < allAntsIds.length; i++) {
+    // using: [ ++i ] to save gas [gas-increment-by-one]
+    for (uint256 i = 0; i < allAntsIds.length; ++i) {
       if (allAntsIds[i] == _antId) revert AlreadyExists();
     }
     _mint(msg.sender, _antId);
