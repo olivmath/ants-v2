@@ -30,12 +30,13 @@ interface ICryptoAnts is IERC721 {
 
   function buyEggs(uint256) external payable;
 
+  error InsufficientEggs();
+  error FailedToBurnEgg();
   error WrongEtherSent();
   error NoZeroAddress();
   error AlreadyExists();
   error Unauthorized();
   error RefundFailed();
-  error NoEggs();
   error MintFailed();
 }
 
@@ -87,7 +88,19 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
   }
 
   function createAnt() external {
-    if (EGGS.balanceOf(msg.sender) < 1) revert NoEggs();
+    if (EGGS.balanceOf(msg.sender) < 1) revert InsufficientEggs();
+
+    // Burn 1 egg by transferring it to this contract
+    try EGGS.transferFrom(msg.sender, address(this), 1) {}
+    catch (bytes memory err) {
+      // propagate the error pattern
+      assembly {
+        let ptr := add(err, 0x20)
+        let len := mload(ptr)
+        revert(ptr, len)
+      }
+    }
+
     uint256 _antId = ++antsCreated;
     for (uint256 i = 0; i < allAntsIds.length; i++) {
       if (allAntsIds[i] == _antId) revert AlreadyExists();
