@@ -17,7 +17,6 @@ import {IERC20} from '@openzeppelin/token/ERC20/IERC20.sol';
 import {ERC721} from '@openzeppelin/token/ERC721/ERC721.sol';
 import {IERC721} from '@openzeppelin/token/ERC721/IERC721.sol';
 import {ReentrancyGuard} from '@openzeppelin/utils/ReentrancyGuard.sol';
-import {mulDiv} from '@prb/math/src/Common.sol';
 
 interface IEgg is IERC20 {
   function mint(address, uint256) external;
@@ -35,7 +34,7 @@ interface ICryptoAnts is IERC721 {
 
   error InsufficientEggs();
   error FailedToBurnEgg();
-  error WrongEtherSent();
+  error InsufficientEtherSent();
   error NoZeroAddress();
   error AlreadyExists();
   error Unauthorized();
@@ -55,10 +54,9 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
   IEgg public immutable EGGS;
   uint256 public eggPrice = 0.01 ether;
   uint256 public antsCreated = 0;
-  mapping(uint256 => address) public antToOwner;
-  mapping(uint256 => Ant) public ants;
-  uint256[] public allAntsIds;
   uint256 public constant EGG_LAY_COOLDOWN = 600; // 10 minutes in seconds
+
+  mapping(uint256 => Ant) public antsMetadata;
 
   constructor(address _eggs) ERC721('Crypto Ants', 'ANTS') Ownable(msg.sender) {
     EGGS = IEgg(_eggs);
@@ -69,9 +67,11 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
   }
 
   function buyEggs(uint256 _amount) external payable override nonReentrant {
-    // Use PRB-Math mulDiv for safe multiplication: totalCost = (_amount * eggPrice) / 1
-    uint256 totalCost = mulDiv(_amount, eggPrice, 1);
-    if (msg.value < totalCost) revert WrongEtherSent();
+    // (safe in Solidity 0.8+)
+    uint256 totalCost = _amount * eggPrice;
+    int256 diff = msg.value - totalCost;
+
+    if (diff < 0) revert InsufficientEtherSent();
 
     try EGGS.mint(msg.sender, _amount) {}
     catch (bytes memory err) {
@@ -84,9 +84,8 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
     }
 
     // Refund excess ether
-    uint256 refund = msg.value - totalCost;
-    if (refund > 0) {
-      (bool success, bytes memory data) = msg.sender.call{value: refund}('');
+    if (diff > 0) {
+      (bool success, bytes memory data) = msg.sender.call{value: diff}('');
       if (!success) {
         // propagate the error pattern
         assembly {
@@ -104,7 +103,7 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
     if (EGGS.balanceOf(msg.sender) < 1) revert InsufficientEggs();
 
     // Burn 1 egg by transferring it to this contract
-    try EGGS.transferFrom(msg.sender, address(this), 1) {}
+    try EGGS.burnFrom(msg.sender, 1) {}
     catch (bytes memory err) {
       // propagate the error pattern
       assembly {
@@ -114,33 +113,16 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
       }
     }
 
-    uint256 _antId = ++antsCreated;
-    // using: [ ++i ] to save gas [gas-increment-by-one]
-    for (uint256 i = 0; i < allAntsIds.length; ++i) {
-      if (allAntsIds[i] == _antId) revert AlreadyExists();
-    }
-    _mint(msg.sender, _antId);
-    antToOwner[_antId] = msg.sender;
-    allAntsIds.push(_antId);
-
-    // Initialize ant data
-    ants[_antId] = Ant({
-      lastEggLayTime: uint40(block.timestamp), // Cooldown starts now
-      totalEggsLaid: 0,
-      isAlive: true
-    });
+    ++antsCreated;
+    _mint(msg.sender, antsCreated);
+    antsMetadata[antsCreated] = Ant(0, 0, true);
 
     emit AntCreated();
   }
 
   function sellAnt(uint256 _antId) external {
-    if (antToOwner[_antId] != msg.sender) revert Unauthorized();
-
-    // Check if ant is alive
-    if (!ants[_antId].isAlive) revert AntIsDead();
-
-    // Mark ant as dead before burning
-    ants[_antId].isAlive = false;
+    if (ownerOf(_antId) != msg.sender) revert Unauthorized();
+    if (!antsMetadata[_antId].isAlive) revert AntIsDead();
 
     (bool isok, bytes memory data) = msg.sender.call{value: 0.004 ether}('');
     if (!isok) {
@@ -151,54 +133,34 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
       }
     }
 
-    delete antToOwner[_antId];
     _burn(_antId);
+    antsMetadata[_antId].isAlive = false;
+
+    emit AntSold();
   }
 
-  /// @notice Allows an ant to lay eggs with cooldown and death mechanics
-  /// @param _antId The token ID of the ant laying eggs
   function layEggs(uint256 _antId) external override nonReentrant {
-    // 1. Validate ownership
-    if (antToOwner[_antId] != msg.sender) revert Unauthorized();
-
-    // 2. Load ant data (single SLOAD)
-    Ant storage ant = ants[_antId];
-
-    // 3. Initialize old ant (backward compatibility)
-    if (ant.lastEggLayTime == 0 && !ant.isAlive) {
-      ant.isAlive = true;
-      ant.lastEggLayTime = uint40(block.timestamp);
-    }
-
-    // 4. Check if alive
+    if (ownerOf(_antId) != msg.sender) revert Unauthorized();
+    Ant storage ant = antsMetadata[_antId];
     if (!ant.isAlive) revert AntIsDead();
+    if (block.timestamp < ant.lastEggLayTime + EGG_LAY_COOLDOWN) revert CooldownNotMet();
 
-    // 5. Validate cooldown
-    if (block.timestamp < ant.lastEggLayTime + EGG_LAY_COOLDOWN) {
-      revert CooldownNotMet();
-    }
-
-    // 6. Generate randomness
     uint256 randomSeed = _generateRandomNumber(_antId, ant.totalEggsLaid);
 
-    // 7. Check death (10% = 0-9 out of 100)
     bool died = (randomSeed % 100) < 10;
 
     if (died) {
       ant.isAlive = false;
       _burn(_antId);
       emit AntDied(_antId, msg.sender);
-      return; // No eggs when dying
+      return;
     }
 
-    // 8. Calculate egg count
     uint256 eggCount = _getNormalDistributedEggs(randomSeed);
 
-    // 9. Update state
     ant.lastEggLayTime = uint40(block.timestamp);
     ant.totalEggsLaid += uint16(eggCount);
 
-    // 10. Mint eggs
     if (eggCount > 0) {
       try EGGS.mint(msg.sender, eggCount) {}
       catch (bytes memory err) {

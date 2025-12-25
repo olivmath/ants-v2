@@ -21,6 +21,12 @@ contract Egg is ERC20, IEgg {
     _mint(_to, _amount);
   }
 
+  function burnFrom(address _account, uint256 _amount) external {
+    //solhint-disable-next-line
+    require(msg.sender == _ants, 'Only the ants contract can call this function, please refer to the ants contract');
+    _burn(_account, _amount);
+  }
+
   function decimals() public view virtual override returns (uint8) {
     return 0;
   }
