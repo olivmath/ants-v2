@@ -1,4 +1,4 @@
-// TODO: [ ] Work on storage padding
+// TODO: [x] Work on storage padding
 // TODO: [ ] Circular deployment, since we need to pass this contract's address to build the Egg
 // TODO: [ ] Maybe this variable is not necessary
 // TODO: [ ] This calculation is unsafe
@@ -42,13 +42,14 @@ interface ICryptoAnts is IERC721 {
 pragma solidity >=0.8.4 <0.9.0;
 
 contract CryptoAnts is ERC721, ICryptoAnts, Ownable {
+  // Storage optimized: bools grouped together to save a storage slot
   bool public locked = false;
-  mapping(uint256 => address) public antToOwner;
-  IEgg public immutable eggs;
-  uint256 public eggPrice = 0.01 ether;
-  uint256[] public allAntsIds;
   bool public override notLocked = false;
+  uint256 public eggPrice = 0.01 ether;
   uint256 public antsCreated = 0;
+  mapping(uint256 => address) public antToOwner;
+  uint256[] public allAntsIds;
+  IEgg public immutable eggs;
 
   constructor(address _eggs) ERC721('Crypto Ants', 'ANTS') Ownable(msg.sender) {
     eggs = IEgg(_eggs);
