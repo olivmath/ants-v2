@@ -1,3 +1,15 @@
+// TODO: [ ] Work on storage padding
+// TODO: [ ] Circular deployment, since we need to pass this contract's address to build the Egg
+// TODO: [ ] Maybe this variable is not necessary
+// TODO: [ ] This calculation is unsafe
+// TODO: [ ] Need a check to know if the mint call reverted
+// TODO: [ ] Need a check to see if the user has enough eggs
+// TODO: [ ] This code looks weird and spaghetti-like
+// TODO: [ ] Replace requires with reverts+error
+// TODO: [ ] solhint-disable-next-line
+// TODO: [ ] This does not work "delete"
+
+import '@openzeppelin/access/Ownable.sol';
 import '@openzeppelin/token/ERC20/IERC20.sol';
 import '@openzeppelin/token/ERC721/ERC721.sol';
 import '@openzeppelin/token/ERC721/IERC721.sol';
@@ -29,8 +41,7 @@ interface ICryptoAnts is IERC721 {
 //SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.4 <0.9.0;
 
-contract CryptoAnts is ERC721, ICryptoAnts {
-  // Work on storage padding
+contract CryptoAnts is ERC721, ICryptoAnts, Ownable {
   bool public locked = false;
   mapping(uint256 => address) public antToOwner;
   IEgg public immutable eggs;
@@ -39,25 +50,23 @@ contract CryptoAnts is ERC721, ICryptoAnts {
   bool public override notLocked = false;
   uint256 public antsCreated = 0;
 
-  // Circular deployment, since we need to pass this contract's address to build the Egg
-  constructor(address _eggs) ERC721('Crypto Ants', 'ANTS') {
+  constructor(address _eggs) ERC721('Crypto Ants', 'ANTS') Ownable(msg.sender) {
     eggs = IEgg(_eggs);
   }
 
+  function setEggPrice(uint256 _price) external onlyOwner {
+    eggPrice = _price;
+  }
+
   function buyEggs(uint256 _amount) external payable override lock {
-    // Maybe this variable is not necessary
     uint256 _eggPrice = eggPrice;
-    // This calculation is unsafe
     uint256 eggsCallerCanBuy = (msg.value / _eggPrice);
-    // Need a check to know if the mint call reverted
     eggs.mint(msg.sender, _amount);
     emit EggsBought(msg.sender, eggsCallerCanBuy);
   }
 
   function createAnt() external {
-    // Need a check to see if the user has enough eggs
     if (eggs.balanceOf(msg.sender) < 1) revert NoEggs();
-    // This code looks weird and spaghetti-like
     uint256 _antId = ++antsCreated;
     for (uint256 i = 0; i < allAntsIds.length; i++) {
       if (allAntsIds[i] == _antId) revert AlreadyExists();
@@ -70,10 +79,8 @@ contract CryptoAnts is ERC721, ICryptoAnts {
 
   function sellAnt(uint256 _antId) external {
     require(antToOwner[_antId] == msg.sender, 'Unauthorized');
-    // solhint-disable-next-line
     (bool success,) = msg.sender.call{value: 0.004 ether}('');
     require(success, 'Whoops, this call failed!');
-    // This does not work "delete"
     delete antToOwner[_antId];
     _burn(_antId);
   }
@@ -87,8 +94,6 @@ contract CryptoAnts is ERC721, ICryptoAnts {
   }
 
   modifier lock() {
-    // Replace requires with reverts+error
-    //solhint-disable-next-line
     require(locked == false, 'Sorry, you are not allowed to re-enter here :)');
     locked = true;
     _;
