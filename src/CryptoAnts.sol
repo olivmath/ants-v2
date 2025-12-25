@@ -115,7 +115,7 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
 
     ++antsCreated;
     _mint(msg.sender, antsCreated);
-    antsMetadata[antsCreated] = Ant(0, 0, true);
+    antsMetadata[antsCreated] = Ant({lastEggLayTime: 0, totalEggsLaid: 0, isAlive: true});
 
     emit AntCreated();
   }
@@ -159,6 +159,8 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
     uint256 eggCount = _getNormalDistributedEggs(randomSeed);
 
     ant.lastEggLayTime = uint40(block.timestamp);
+    // casting to 'uint16' is safe because _getNormalDistributedEggs returns 0-20 (max 20 << 65535)
+    // forge-lint: disable-next-line(unsafe-typecast)
     ant.totalEggsLaid += uint16(eggCount);
 
     if (eggCount > 0) {
