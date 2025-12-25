@@ -36,6 +36,7 @@ interface ICryptoAnts is IERC721 {
   error Unauthorized();
   error RefundFailed();
   error NoEggs();
+  error MintFailed();
 }
 
 contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
@@ -58,13 +59,28 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
     uint256 totalCost = mulDiv(_amount, eggPrice, 1);
     if (msg.value < totalCost) revert WrongEtherSent();
 
-    EGGS.mint(msg.sender, _amount);
+    try EGGS.mint(msg.sender, _amount) {}
+    catch (bytes memory err) {
+      // propagate the error pattern
+      assembly {
+        let ptr := add(err, 0x20)
+        let len := mload(ptr)
+        revert(ptr, len)
+      }
+    }
 
     // Refund excess ether
     uint256 refund = msg.value - totalCost;
     if (refund > 0) {
-      (bool success,) = msg.sender.call{value: refund}('');
-      if (!success) revert RefundFailed();
+      (bool success, bytes memory data) = msg.sender.call{value: refund}('');
+      if (!success) {
+        // propagate the error pattern
+        assembly {
+          let ptr := add(data, 0x20)
+          let len := mload(ptr)
+          revert(ptr, len)
+        }
+      }
     }
 
     emit EggsBought(msg.sender, _amount);
