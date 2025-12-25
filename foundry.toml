@@ -12,6 +12,9 @@ sort_imports = true
 solc_version = '0.8.23'
 libs = ['node_modules', 'lib']
 optimizer_runs = 10_000
+extra_output = ["storageLayout", "metadata"]
+extra_output_files = ["metadata"]
+ast = true
 
 [profile.optimized]
 via_ir = true
