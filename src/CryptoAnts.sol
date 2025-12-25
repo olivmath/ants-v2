@@ -136,8 +136,14 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
   function sellAnt(uint256 _antId) external {
     if (antToOwner[_antId] != msg.sender) revert Unauthorized();
 
+    // Check if ant is alive
+    if (!ants[_antId].isAlive) revert AntIsDead();
+
+    // Mark ant as dead before burning
+    ants[_antId].isAlive = false;
+
     (bool isok, bytes memory data) = msg.sender.call{value: 0.004 ether}('');
-    if (isok) {
+    if (!isok) {
       assembly {
         let ptr := add(data, 0x20)
         let len := mload(ptr)
