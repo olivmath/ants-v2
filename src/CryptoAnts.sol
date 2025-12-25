@@ -1,6 +1,6 @@
 // TODO: [x] Work on storage padding
 // TODO: [ ] Circular deployment, since we need to pass this contract's address to build the Egg
-// TODO: [ ] Maybe this variable is not necessary
+// TODO: [x] Maybe this variable is not necessary
 // TODO: [ ] This calculation is unsafe
 // TODO: [ ] Need a check to know if the mint call reverted
 // TODO: [ ] Need a check to see if the user has enough eggs
@@ -13,6 +13,7 @@ import '@openzeppelin/access/Ownable.sol';
 import '@openzeppelin/token/ERC20/IERC20.sol';
 import '@openzeppelin/token/ERC721/ERC721.sol';
 import '@openzeppelin/token/ERC721/IERC721.sol';
+import '@openzeppelin/utils/ReentrancyGuard.sol';
 import 'forge-std/console.sol';
 
 interface IEgg is IERC20 {
@@ -21,8 +22,6 @@ interface IEgg is IERC20 {
 
 interface ICryptoAnts is IERC721 {
   event EggsBought(address, uint256);
-
-  function notLocked() external view returns (bool);
 
   function buyEggs(uint256) external payable;
 
@@ -41,10 +40,7 @@ interface ICryptoAnts is IERC721 {
 //SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.4 <0.9.0;
 
-contract CryptoAnts is ERC721, ICryptoAnts, Ownable {
-  // Storage optimized: bools grouped together to save a storage slot
-  bool public locked = false;
-  bool public override notLocked = false;
+contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
   uint256 public eggPrice = 0.01 ether;
   uint256 public antsCreated = 0;
   mapping(uint256 => address) public antToOwner;
@@ -59,7 +55,7 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable {
     eggPrice = _price;
   }
 
-  function buyEggs(uint256 _amount) external payable override lock {
+  function buyEggs(uint256 _amount) external payable override nonReentrant {
     uint256 _eggPrice = eggPrice;
     uint256 eggsCallerCanBuy = (msg.value / _eggPrice);
     eggs.mint(msg.sender, _amount);
@@ -92,12 +88,5 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable {
 
   function getAntsCreated() public view returns (uint256) {
     return antsCreated;
-  }
-
-  modifier lock() {
-    require(locked == false, 'Sorry, you are not allowed to re-enter here :)');
-    locked = true;
-    _;
-    locked = notLocked;
   }
 }

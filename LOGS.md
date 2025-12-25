@@ -16,3 +16,15 @@ Reorganizei as variáveis de estado do contrato para otimizar o uso de storage:
 - Reordenei as variáveis seguindo a ordem: bools, uint256s, mappings, arrays
 - Economia de 1 slot de storage (32 bytes)
 - Adicionei comentário explicativo sobre a otimização
+
+# 5 Substituição do reentrancy guard custom por ReentrancyGuard do OpenZeppelin
+
+Melhorei a segurança contra reentrancy usando o padrão do OpenZeppelin:
+- Adicionei import de `@openzeppelin/utils/ReentrancyGuard.sol`
+- Fiz o contrato herdar de `ReentrancyGuard`
+- Removi as variáveis `locked` e `notLocked` (não mais necessárias)
+- Removi a função `notLocked()` da interface `ICryptoAnts`
+- Substituí o modifier `lock` customizado pelo `nonReentrant` do OpenZeppelin
+- Removi o modifier `lock()` que tinha lógica manual
+- Economia adicional de 2 slots de storage (64 bytes) das variáveis removidas
+- Maior segurança usando biblioteca battle-tested
