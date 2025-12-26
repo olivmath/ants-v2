@@ -1,0 +1,24 @@
+name: crypto-ants-indexer
+description: Indexer for Crypto Ants NFT events
+ecosystem: evm
+
+# Network configuration
+networks:
+  - id: 31337 # Hardhat/Localhost
+    start_block: 0
+    contracts:
+      - name: CryptoAnts
+        address:
+          - "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+        handler: src/EventHandlers.ts
+        events:
+          - event: "EggsBought(address buyer, uint256 amount)"
+          - event: "AntCreated()"
+          - event: "AntSold()"
+          - event: "EggsLaid(uint256 indexed antId, address indexed owner, uint256 eggCount)"
+          - event: "AntDied(uint256 indexed antId, address indexed owner)"
+
+# Optional: Add support for testnets/mainnet later
+# - id: 1 # Ethereum Mainnet
+# - id: 137 # Polygon
+# - id: 11155111 # Sepolia testnet

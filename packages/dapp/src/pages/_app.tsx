@@ -18,6 +18,8 @@ import {
   QueryClientProvider,
   QueryClient,
 } from "@tanstack/react-query";
+import { ApolloProvider } from "@apollo/client";
+import { apolloClient } from "@/lib/apollo-client";
 import { useState, useEffect } from "react";
 
 const config = getDefaultConfig({
@@ -31,7 +33,7 @@ const queryClient = new QueryClient();
 
 export default function App({ Component, pageProps }: AppProps) {
   const [mounted, setMounted] = useState(false);
-  
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -39,12 +41,14 @@ export default function App({ Component, pageProps }: AppProps) {
   if (!mounted) return null;
 
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>
-          <Component {...pageProps} />
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <ApolloProvider client={apolloClient}>
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <RainbowKitProvider>
+            <Component {...pageProps} />
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </ApolloProvider>
   );
 }

@@ -1,0 +1,42 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260">
+  <style>
+    .egg-shape { stroke-width: 4; }
+    .ant-limbs, .ant-antenna { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .ant-limbs { stroke-width: 4; }
+    .ant-antenna { stroke-width: 3; }
+    .ant-body { stroke: none; }
+  </style>
+
+  <!-- Egg shell with parametrizable colors -->
+  <path class="egg-shape"
+        id="egg-shell"
+        fill="{{EGG_COLOR}}"
+        stroke="{{ANT_COLOR}}"
+        d="M100,10 C 50,10 10,80 10,140 C 10,200 50,250 100,250 C 150,250 190,200 190,140 C 190,80 150,10 100,10 Z"/>
+
+  <!-- Ant inside the egg -->
+  <g transform="translate(50,60)" fill="{{ANT_COLOR}}" stroke="{{ANT_COLOR}}">
+    <!-- Ant legs -->
+    <g class="ant-limbs">
+      <path d="M48,65 C40,55 25,50 15,55"/>
+      <path d="M48,75 C35,75 20,80 10,85"/>
+      <path d="M48,85 C40,100 25,115 15,120"/>
+      <path d="M52,65 C60,55 75,50 85,55"/>
+      <path d="M52,75 C65,75 80,80 90,85"/>
+      <path d="M52,85 C60,100 75,115 85,120"/>
+    </g>
+
+    <!-- Ant antennae -->
+    <g class="ant-antenna">
+      <path d="M43,30 Q30,10 20,18"/>
+      <path d="M57,30 Q70,10 80,18"/>
+    </g>
+
+    <!-- Ant body parts -->
+    <g class="ant-body">
+      <circle cx="50" cy="35" r="15"/>
+      <ellipse cx="50" cy="72" rx="12" ry="18"/>
+      <ellipse cx="50" cy="115" rx="20" ry="28"/>
+    </g>
+  </g>
+</svg>

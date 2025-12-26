@@ -9,10 +9,13 @@
     "contracts:coverage": "pnpm --filter contracts coverage",
     "contracts:lint": "pnpm --filter contracts lint",
     "contracts:format": "pnpm --filter contracts format",
-    "backend:dev": "pnpm --filter backend dev",
-    "backend:codegen": "pnpm --filter backend codegen",
+    "indexer:dev": "pnpm --filter indexer dev",
+    "indexer:codegen": "pnpm --filter indexer codegen",
     "dapp:dev": "pnpm --filter dapp dev",
     "dapp:build": "pnpm --filter dapp build",
-    "dev": "pnpm --parallel --filter dapp --filter backend dev"
+    "dev": "pnpm --parallel --filter dapp --filter indexer dev",
+    "dev:all": "./scripts/dev.sh",
+    "deploy:local": "./scripts/deploy-local.sh",
+    "test:e2e": "./scripts/test-e2e.sh"
   }
 }
