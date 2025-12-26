@@ -1,0 +1,74 @@
+"""
+Ant NFT entity
+Represents a single Crypto Ant with all its traits and state
+"""
+type Ant @entity {
+  id: ID! # Token ID
+  owner: String! # Current owner address (or last owner if sold/dead)
+  lastEggLayTime: BigInt! # Timestamp of last egg laying
+  totalEggsLaid: Int! # Lifetime egg count
+  color: String! # Hex color #RRGGBB
+  eggColor: String! # Hex color #RRGGBB
+  isAlive: Boolean! # Life status
+  createdAt: BigInt! # Block timestamp when created
+  updatedAt: BigInt! # Block timestamp of last update
+  createdAtBlock: BigInt! # Block number when created
+
+  # Relationships
+  events: [Event!]! @derivedFrom(field: "ant")
+}
+
+"""
+Event entity
+Represents all events related to ants
+"""
+type Event @entity {
+  id: ID! # Unique event ID (txHash-logIndex)
+  type: EventType! # Event type enum
+  ant: Ant # Related ant (null for EggsBought)
+  owner: String! # Address that triggered the event
+  amount: Int # Amount (for EggsBought and EggsLaid)
+  blockNumber: BigInt! # Block number
+  blockTimestamp: BigInt! # Block timestamp
+  transactionHash: String! # Transaction hash
+}
+
+"""
+Event type enum
+"""
+enum EventType {
+  EGGS_BOUGHT
+  ANT_CREATED
+  ANT_SOLD
+  EGGS_LAID
+  ANT_DIED
+}
+
+"""
+Global statistics
+Singleton entity to track global stats
+"""
+type GlobalStats @entity {
+  id: ID! # Always "global"
+  totalAnts: Int!
+  aliveAnts: Int!
+  deadAnts: Int!
+  totalEggsLaid: Int!
+  totalEggsBought: Int!
+  lastUpdatedAt: BigInt!
+}
+
+"""
+User statistics
+Per-user aggregated stats
+"""
+type UserStats @entity {
+  id: ID! # User address
+  address: String!
+  ownedAnts: Int!
+  aliveAnts: Int!
+  deadAnts: Int!
+  totalEggsLaid: Int!
+  totalEggsBought: Int!
+  lastActivity: BigInt!
+}

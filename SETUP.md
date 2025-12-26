@@ -1,6 +1,6 @@
 # Crypto Ants v2 - Setup Guide
 
-Este guia explica como configurar e executar o projeto Crypto Ants v2 com a nova arquitetura usando IPFS, Backend e Frontend integrados.
+Este guia explica como configurar e executar o projeto Crypto Ants v2 com a nova arquitetura usando **Envio (Indexer)** + **GraphQL** + **Supabase** + **IPFS**.
 
 ## 📋 Arquitetura
 
@@ -10,8 +10,10 @@ Este guia explica como configurar e executar o projeto Crypto Ants v2 com a nova
 │  (Next.js)  │
 └─────┬───────┘
       │
-      ├─────────────► Backend API (dados das formigas e eventos)
-      │               └─► Indexador blockchain
+      ├─────────────► GraphQL API (Envio/Hasura)
+      │               └─► Supabase PostgreSQL
+      │                   └─► Envio Indexer
+      │                       └─► Blockchain eventos
       │
       ├─────────────► IPFS (SVG template)
       │
@@ -21,6 +23,13 @@ Este guia explica como configurar e executar o projeto Crypto Ants v2 com a nova
                       - layEggs()
                       - sellAnt()
 ```
+
+### Componentes:
+
+1. **Envio**: Indexa eventos da blockchain e expõe API GraphQL
+2. **Supabase**: Banco de dados PostgreSQL (ou PostgreSQL local)
+3. **IPFS**: Armazena template SVG das formigas
+4. **Frontend**: Next.js + Apollo Client para consumir GraphQL
 
 ## 🚀 Passo 1: Upload do SVG para IPFS
 
@@ -41,80 +50,106 @@ O SVG template está localizado em `packages/dapp/public/ant-template.svg`
 ### Opção C: Usando IPFS local (desenvolvimento)
 
 ```bash
-# Instalar IPFS
-# https://docs.ipfs.tech/install/
-
-# Iniciar daemon
 ipfs daemon
-
-# Fazer upload
 ipfs add packages/dapp/public/ant-template.svg
-
-# Copiar o CID retornado
 ```
 
-## 🔧 Passo 2: Configurar Backend
+## 🗄️ Passo 2: Configurar Supabase
+
+### Opção A: Supabase Cloud (Recomendado)
+
+1. Crie uma conta em https://supabase.com
+2. Crie um novo projeto
+3. Vá em **SQL Editor** e execute o script:
+   ```bash
+   cat packages/indexer/supabase-setup.sql
+   ```
+4. Copie as credenciais:
+   - Project URL
+   - `anon` key
+   - `service_role` key (para o indexer)
+
+### Opção B: PostgreSQL Local
 
 ```bash
-cd packages/backend
+# Instalar PostgreSQL
+brew install postgresql  # macOS
+sudo apt-get install postgresql  # Linux
+
+# Iniciar serviço
+brew services start postgresql  # macOS
+sudo service postgresql start  # Linux
+
+# Criar banco de dados
+createdb envio-indexer
+```
+
+## 📦 Passo 3: Configurar Envio Indexer
+
+```bash
+cd packages/indexer
 
 # Instalar dependências
 pnpm install
 
+# Instalar Envio CLI globalmente
+npm install -g envio
+
 # Copiar arquivo de configuração
 cp .env.example .env
-
-# Editar .env e configurar:
-# - ANT_SVG_CID=<CID_DO_IPFS>
-# - RPC_URL=http://127.0.0.1:8545 (ou sua rede)
-# - CRYPTO_ANTS_ADDRESS=<endereço_do_contrato>
-# - EGG_ADDRESS=<endereço_do_egg_token>
 ```
 
-Exemplo de `.env`:
-```
-PORT=3001
-NODE_ENV=development
+### Editar `.env`:
 
-RPC_URL=http://127.0.0.1:8545
-CRYPTO_ANTS_ADDRESS=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
-EGG_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
-START_BLOCK=0
-
-IPFS_GATEWAY=https://ipfs.io/ipfs/
+**Para Supabase:**
+```env
+SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+RPC_URL_31337=http://127.0.0.1:8545
 ANT_SVG_CID=QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-DB_PATH=./data/ants.db
 ```
 
-## 📦 Passo 3: Deploy dos Contratos
+**Para PostgreSQL Local:**
+```env
+ENVIO_PG_HOST=localhost
+ENVIO_PG_PORT=5432
+ENVIO_PG_DATABASE=envio-indexer
+ENVIO_PG_USER=postgres
+ENVIO_PG_PASSWORD=postgres
+RPC_URL_31337=http://127.0.0.1:8545
+```
 
-O contrato `CryptoAnts.sol` foi modificado para aceitar um `baseTokenURI` no construtor.
+### Atualizar endereços dos contratos:
+
+Edite `packages/indexer/config.yaml`:
+
+```yaml
+networks:
+  - id: 31337
+    contracts:
+      - name: CryptoAnts
+        address:
+          - "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"  # Seu endereço
+```
+
+### Gerar código TypeScript:
 
 ```bash
-cd packages/contracts
-
-# Modificar o script de deploy para incluir o IPFS URI
-# Em scripts/deploy.ts ou similar, passar:
-# - ipfsUri = "ipfs://QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-# ou
-# - ipfsUri = "https://ipfs.io/ipfs/QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-
-# Deploy
-pnpm run deploy:local
-# ou
-forge script script/Deploy.s.sol --rpc-url $RPC_URL --broadcast
+cd packages/indexer
+pnpm run codegen
 ```
 
-### Modificar Deploy Script
+Isso gera:
+- Tipos TypeScript em `generated/`
+- Schema do banco de dados
+- ABIs dos contratos
 
-O construtor do `CryptoAnts` agora precisa de 2 parâmetros:
+## 🎨 Passo 4: Deploy dos Contratos
 
-```solidity
-constructor(address _eggs, string memory _baseTokenURI)
-```
+O contrato `CryptoAnts.sol` foi modificado para aceitar `baseTokenURI` no construtor.
 
-Exemplo de script de deploy:
+### Exemplo de script de deploy:
+
 ```typescript
 const ipfsGateway = "https://ipfs.io/ipfs/";
 const antSvgCid = "QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
@@ -126,20 +161,30 @@ const CryptoAnts = await ethers.deployContract("CryptoAnts", [
 ]);
 ```
 
-## 🎨 Passo 4: Configurar Frontend
+Deploy:
+```bash
+cd packages/contracts
+pnpm run deploy:local
+```
+
+## 🌐 Passo 5: Configurar Frontend
 
 ```bash
 cd packages/dapp
 
 # Copiar arquivo de configuração
 cp .env.example .env.local
-
-# Editar .env.local
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
-NEXT_PUBLIC_IPFS_GATEWAY=https://ipfs.io/ipfs/
 ```
 
-## ▶️ Passo 5: Executar o Projeto
+Edite `.env.local`:
+
+```env
+NEXT_PUBLIC_GRAPHQL_ENDPOINT=http://localhost:8080/v1/graphql
+NEXT_PUBLIC_IPFS_GATEWAY=https://ipfs.io/ipfs/
+NEXT_PUBLIC_ANT_SVG_CID=QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+## ▶️ Passo 6: Executar o Projeto
 
 ### Terminal 1 - Blockchain (Hardhat local)
 ```bash
@@ -147,18 +192,19 @@ cd packages/contracts
 pnpm run node
 ```
 
-### Terminal 2 - Backend Indexer
+### Terminal 2 - Envio Indexer
 ```bash
-cd packages/backend
+cd packages/indexer
 pnpm run dev
 ```
 
-O backend irá:
-- ✅ Conectar à blockchain
-- ✅ Criar banco de dados SQLite
+O Envio irá:
+- ✅ Conectar ao banco de dados
+- ✅ Criar tabelas automaticamente
 - ✅ Sincronizar eventos históricos
 - ✅ Escutar novos eventos em tempo real
-- ✅ Expor API REST em `http://localhost:3001/api`
+- ✅ Expor GraphQL em `http://localhost:8080/v1/graphql`
+- ✅ GraphQL Playground em `http://localhost:8080/console`
 
 ### Terminal 3 - Frontend
 ```bash
@@ -166,112 +212,195 @@ cd packages/dapp
 pnpm run dev
 ```
 
-Acesse: http://localhost:3000
+Acesse: http://localhost:3000/index-graphql
 
 ## 🔄 Usando a Nova Versão
 
-### Opção A: Substituir página principal
+### Substituir página principal:
 
 ```bash
 # Renomear página antiga
 mv packages/dapp/src/pages/index.tsx packages/dapp/src/pages/index-old.tsx
 
-# Usar nova versão com backend
-mv packages/dapp/src/pages/index-backend.tsx packages/dapp/src/pages/index.tsx
+# Usar nova versão com GraphQL
+mv packages/dapp/src/pages/index-graphql.tsx packages/dapp/src/pages/index.tsx
 ```
 
-### Opção B: Acessar rota separada
+## 📊 GraphQL API
 
-Acesse: http://localhost:3000/index-backend
+### Playground
+
+Acesse: `http://localhost:8080/console`
+
+### Exemplos de Queries
+
+#### Buscar todas as formigas
+
+```graphql
+query GetAllAnts {
+  Ant(limit: 100, order_by: { id: desc }) {
+    id
+    owner
+    totalEggsLaid
+    color
+    eggColor
+    isAlive
+    lastEggLayTime
+  }
+}
+```
+
+#### Buscar formigas de um usuário
+
+```graphql
+query GetUserAnts($owner: String!) {
+  Ant(where: { owner: { _eq: $owner } }) {
+    id
+    totalEggsLaid
+    color
+    eggColor
+    isAlive
+    events {
+      type
+      amount
+      blockTimestamp
+    }
+  }
+}
+```
+
+#### Estatísticas globais
+
+```graphql
+query GetGlobalStats {
+  GlobalStats {
+    totalAnts
+    aliveAnts
+    deadAnts
+    totalEggsLaid
+    totalEggsBought
+  }
+}
+```
 
 ## 🧪 Testando a Integração
 
 1. **Compre Eggs**: Use a interface para comprar ovos
-2. **Crie Ant**: Crie uma formiga (consome 1 ovo)
-3. **Verifique Backend**: Acesse http://localhost:3001/api/ants - deve mostrar sua formiga
-4. **Verifique Imagem**: A imagem deve carregar do IPFS com as cores corretas
-5. **Lay Eggs**: Faça a formiga pôr ovos
-6. **Verifique Eventos**: Acesse http://localhost:3001/api/events
-
-## 📊 Endpoints da API
-
-```
-GET  /api/ants                     # Lista todas as formigas
-GET  /api/ants/:id                 # Detalhes de uma formiga
-GET  /api/ants/:id/events          # Eventos de uma formiga
-GET  /api/events                   # Todos os eventos
-GET  /api/stats                    # Estatísticas globais
-GET  /api/users/:address/stats     # Estatísticas de um usuário
-GET  /api/config                   # Configuração pública (IPFS CID, etc)
-```
+2. **Verifique Indexer**: Logs devem mostrar evento `EggsBought`
+3. **Verifique GraphQL**:
+   ```bash
+   curl -X POST http://localhost:8080/v1/graphql \
+     -H "Content-Type: application/json" \
+     -d '{"query": "{ GlobalStats { totalEggsBought } }"}'
+   ```
+4. **Crie Ant**: Crie uma formiga e veja o evento `AntCreated` nos logs
+5. **Verifique Frontend**: A formiga deve aparecer com imagem do IPFS
 
 ## 🐛 Troubleshooting
 
-### Backend não conecta à blockchain
-- Verifique se o `RPC_URL` está correto
-- Verifique se o node local está rodando (Hardhat ou Anvil)
+### Indexer não inicia
 
-### Imagens não carregam
-- Verifique se o `ANT_SVG_CID` está correto no `.env` do backend
-- Teste acessar diretamente: `https://ipfs.io/ipfs/<CID>`
-- Tente usar outro gateway IPFS se houver problemas de rede
+- Verifique se PostgreSQL/Supabase está acessível
+- Verifique credenciais no `.env`
+- Execute: `pnpm run codegen` novamente
 
-### Frontend não busca dados do backend
-- Verifique se o backend está rodando em `http://localhost:3001`
-- Verifique o console do browser para erros de CORS
-- Verifique se `NEXT_PUBLIC_API_URL` está correto
+### GraphQL retorna erro
 
-### Cores não aparecem corretamente
-- As cores são armazenadas como hex strings no formato `#RRGGBB`
-- O frontend busca as cores do backend e injeta no SVG do IPFS
-- Verifique se o SVG template tem os placeholders `{{ANT_COLOR}}` e `{{EGG_COLOR}}`
+- Verifique se o indexer está rodando: `http://localhost:8080/health`
+- Teste no playground: `http://localhost:8080/console`
 
-## 📝 Estrutura do Projeto
+### Frontend não carrega dados
+
+- Verifique `NEXT_PUBLIC_GRAPHQL_ENDPOINT` no `.env.local`
+- Abra DevTools e veja erros de rede
+- Teste query diretamente no playground
+
+### Imagens não aparecem
+
+- Verifique `NEXT_PUBLIC_ANT_SVG_CID` no `.env.local`
+- Teste IPFS gateway: `https://ipfs.io/ipfs/<CID>`
+
+## 📁 Estrutura do Projeto
 
 ```
 ants-v2/
 ├── packages/
 │   ├── contracts/              # Smart contracts (Solidity)
 │   │   └── src/
-│   │       └── CryptoAnts.sol  # Contrato principal (modificado)
+│   │       └── CryptoAnts.sol  # Contrato principal
 │   │
-│   ├── backend/                # Backend indexer + API (NOVO!)
+│   ├── indexer/                # Envio indexer (NOVO!)
+│   │   ├── config.yaml         # Configuração do Envio
+│   │   ├── schema.graphql      # Schema GraphQL
 │   │   ├── src/
-│   │   │   ├── index.ts        # Servidor Express
-│   │   │   ├── indexer.ts      # Indexador blockchain
-│   │   │   ├── routes.ts       # Rotas da API
-│   │   │   └── db/             # Schema e migrations
-│   │   └── package.json
+│   │   │   └── EventHandlers.ts # Handlers de eventos
+│   │   ├── supabase-setup.sql  # Setup do Supabase
+│   │   └── README.md
 │   │
 │   └── dapp/                   # Frontend (Next.js)
 │       ├── src/
 │       │   ├── components/
-│       │   │   ├── AntImage.tsx          # Renderiza SVG do IPFS
-│       │   │   ├── AntCardBackend.tsx    # Card com dados do backend
-│       │   │   └── AntColonyBackend.tsx  # Lista de formigas
+│       │   │   ├── AntImage.tsx
+│       │   │   ├── AntCardBackend.tsx
+│       │   │   └── AntColonyGraphQL.tsx  # NOVO!
 │       │   ├── lib/
-│       │   │   ├── api.ts                # Cliente da API
-│       │   │   └── svg.ts                # Utilitários SVG
+│       │   │   ├── apollo-client.ts      # NOVO!
+│       │   │   ├── graphql/
+│       │   │   │   ├── queries.ts        # NOVO!
+│       │   │   │   ├── types.ts          # NOVO!
+│       │   │   │   └── hooks.ts          # NOVO!
+│       │   │   └── svg.ts
 │       │   └── pages/
-│       │       ├── index.tsx              # Página original
-│       │       └── index-backend.tsx      # Nova versão com backend
+│       │       ├── index.tsx
+│       │       └── index-graphql.tsx     # NOVO!
 │       └── public/
-│           └── ant-template.svg           # Template SVG para IPFS
+│           └── ant-template.svg
 ```
 
-## 🎯 Próximos Passos
+## 🚀 Deploy em Produção
 
-- [ ] Fazer upload do SVG para IPFS
-- [ ] Configurar `.env` do backend com o CID do IPFS
-- [ ] Deploy dos contratos com o novo construtor
-- [ ] Testar integração completa
-- [ ] Substituir página principal pelo `index-backend.tsx`
-- [ ] Deploy em produção
+### 1. Deploy Envio Indexer
+
+**Opção A: Envio Cloud (Recomendado)**
+
+```bash
+cd packages/indexer
+envio login
+envio deploy
+```
+
+**Opção B: Self-hosted**
+
+Use Docker + PostgreSQL + Hasura
+
+### 2. Deploy Frontend
+
+```bash
+cd packages/dapp
+pnpm run build
+
+# Deploy em Vercel
+vercel deploy --prod
+```
+
+Configurar variáveis de ambiente:
+- `NEXT_PUBLIC_GRAPHQL_ENDPOINT`: URL do GraphQL em produção
+- `NEXT_PUBLIC_IPFS_GATEWAY`: Gateway IPFS
+- `NEXT_PUBLIC_ANT_SVG_CID`: CID do SVG
 
 ## 💡 Vantagens da Nova Arquitetura
 
-✅ **Performance**: Frontend não faz múltiplas chamadas RPC
-✅ **Escalabilidade**: Backend indexa e cacheia dados
-✅ **Flexibilidade**: Imagens no IPFS podem ser atualizadas sem redeploy
-✅ **Custo**: Menos chamadas à blockchain = menos custos de RPC
-✅ **UX**: Carregamento mais rápido e interface mais responsiva
+✅ **Performance**: GraphQL permite queries otimizadas
+✅ **Escalabilidade**: Envio indexa automaticamente todos os eventos
+✅ **Real-time**: Suporte a subscriptions GraphQL
+✅ **Custo**: Indexer cacheia dados, reduzindo chamadas RPC
+✅ **Flexibilidade**: Adicionar novos eventos é simples
+✅ **Developer Experience**: Playground GraphQL para testar queries
+✅ **Supabase**: Auth, Storage e Edge Functions quando precisar
+
+## 📚 Recursos
+
+- [Envio Documentation](https://docs.envio.dev)
+- [Supabase Documentation](https://supabase.com/docs)
+- [Apollo Client](https://www.apollographql.com/docs/react/)
+- [Hasura GraphQL](https://hasura.io/docs)
