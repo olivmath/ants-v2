@@ -1,11 +1,9 @@
 import "@/styles/globals.css";
 import "@rainbow-me/rainbowkit/styles.css";
 import type { AppProps } from "next/app";
-import {
-  getDefaultConfig,
-  RainbowKitProvider,
-} from "@rainbow-me/rainbowkit";
-import { WagmiProvider } from "wagmi";
+import { RainbowKitProvider, connectorsForWallets } from "@rainbow-me/rainbowkit";
+import { injectedWallet, rainbowWallet, walletConnectWallet } from "@rainbow-me/rainbowkit/wallets";
+import { WagmiProvider, http, createConfig } from "wagmi";
 import {
   mainnet,
   polygon,
@@ -22,10 +20,30 @@ import { ApolloProvider } from "@apollo/client";
 import { apolloClient } from "@/lib/apollo-client";
 import { useState, useEffect } from "react";
 
-const config = getDefaultConfig({
-  appName: "Crypto Ants App",
-  projectId: "YOUR_PROJECT_ID", // Get one at https://cloud.walletconnect.com/
+const connectors = connectorsForWallets(
+  [
+    {
+      groupName: 'Recommended',
+      wallets: [injectedWallet, rainbowWallet, walletConnectWallet],
+    },
+  ],
+  {
+    appName: 'Crypto Ants App',
+    projectId: 'YOUR_PROJECT_ID',
+  }
+);
+
+const config = createConfig({
+  connectors,
   chains: [hardhat, mainnet, polygon, optimism, arbitrum, base],
+  transports: {
+    [hardhat.id]: http(),
+    [mainnet.id]: http(),
+    [polygon.id]: http(),
+    [optimism.id]: http(),
+    [arbitrum.id]: http(),
+    [base.id]: http(),
+  },
   ssr: true,
 });
 

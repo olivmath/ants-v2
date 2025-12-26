@@ -18,7 +18,7 @@ contract CryptoAntsFormalTest is Test, SymTest {
     // Deploy Egg with placeholder address first
     eggs = new Egg(address(0xdead));
     // Deploy CryptoAnts with actual Egg address
-    cryptoAnts = new CryptoAnts(address(eggs));
+    cryptoAnts = new CryptoAnts(address(eggs), 'ipfs://bafkreic7mcysfc7eqlri2pjkfupkri7xk47c25hbwp4sm34owe3hudkkzm/');
 
     // Note: In production, use circular deployment with nonce prediction
     // This simplified setup works for formal verification

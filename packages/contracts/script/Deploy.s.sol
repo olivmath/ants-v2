@@ -31,7 +31,7 @@ contract Deploy is Script {
     console2.log('Egg deployed at:', address(eggs));
 
     // Deploy CryptoAnts with Egg address
-    cryptoAnts = new CryptoAnts(address(eggs));
+    cryptoAnts = new CryptoAnts(address(eggs), 'ipfs://bafkreic7mcysfc7eqlri2pjkfupkri7xk47c25hbwp4sm34owe3hudkkzm/');
     console2.log('CryptoAnts deployed at:', address(cryptoAnts));
 
     // Verify circular dependency is correct

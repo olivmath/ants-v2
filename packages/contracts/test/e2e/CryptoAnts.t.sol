@@ -22,7 +22,7 @@ contract E2ECryptoAnts is Test, TestUtils {
     // Deploy Egg first with future CryptoAnts address
     _eggs = new Egg(futureAntsAddress);
     // Deploy CryptoAnts with Egg address (address must match futureAntsAddress)
-    _cryptoAnts = new CryptoAnts(address(_eggs));
+    _cryptoAnts = new CryptoAnts(address(_eggs), 'ipfs://bafkreic7mcysfc7eqlri2pjkfupkri7xk47c25hbwp4sm34owe3hudkkzm/');
   }
 
   function testOnlyAllowCryptoAntsToMintEggs() public {

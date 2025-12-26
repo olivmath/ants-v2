@@ -17,7 +17,7 @@ contract ExcessEthRefundedWhenBuyingEggsTest is Test, TestUtils {
     uint64 currentNonce = vm.getNonce(address(this));
     address futureAntsAddress = vm.computeCreateAddress(address(this), currentNonce + 1);
     _eggs = new Egg(futureAntsAddress);
-    _cryptoAnts = new CryptoAnts(address(_eggs));
+    _cryptoAnts = new CryptoAnts(address(_eggs), 'ipfs://bafkreic7mcysfc7eqlri2pjkfupkri7xk47c25hbwp4sm34owe3hudkkzm/');
   }
 
   function testExcessEthRefundedWhenBuyingEggs() public {
