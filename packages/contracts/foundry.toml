@@ -15,6 +15,7 @@ optimizer_runs = 10_000
 extra_output = ["storageLayout", "metadata"]
 extra_output_files = ["metadata"]
 ast = true
+via_ir = true
 
 [profile.optimized]
 via_ir = true
