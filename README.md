@@ -1,93 +1,48 @@
-# DeFi Wonderland Challenge
+# 🐜 Regras Completas do AntGame
 
-Ooooh no! Robert, our lead developer, had an urgent flight and left us with an unfinished game.
+## Ovos
+- Ovo custa: 0.01 ETH (preço dinâmico)
+- 1 Ovo → 1 Formiga (sempre)
+- Ovos podem ser vendidos/transferidos livremente
 
-Hey you, yes **YOU**, are you a developer?! Do you know some Solidity? Could you please help us finish this game?
+## Formigas (NFT)
+- Cada formiga é única (ERC-721)
+- Atributos: ovosTotal, tentativas, ultimaVez
+- Pode fazer breeding para gerar ovos
+- Pode ser listada para venda P2P
 
-This is the note he left us:
+## Breeding
+- Produz: 0 a 5 ovos
+- 40% chance de morrer (sempre)
+- Distribuição se sobrevive:
+  - 30% → 1 ovo
+  - 20% → 2 ovos
+  - 8% → 3 ovos
+  - 1.8% → 4 ovos
+  - 0.2% → 5 ovos
+- Bônus: +0.5% chance de 5 ovos a cada 10 ovosTotal (máx +5%)
+- Cooldown: 10min × (1.5^tentativas), máximo 7 dias
+- Se morrer: formiga é queimada (destruída)
+- Atualiza: ovosTotal += ovos gerados, tentativas += 1
 
-> Hey guys, sorry but I had an urgent thing to attend to with some ~~friends~~ family.
-> The game is **almost** there but I didn't have time to test or organize the code properly. I also didn't have time to read the logic twice to see if I missed something.
->
-> Oh, here's the status of the thingies we've discussed:
->
-> - [x] EGGs should be ERC20 tokens
-> - [x] EGGs should be indivisible
-> - [x] ANTs should be ERC721 tokens (**NFTs**)
-> - [x] Users can buy EGGs with ETH
-> - [x] EGGs should cost 0.01 ETH
-> - [x] An EGG can be used to create an ANT
-> - [x] An ANT can be sold for less ETH than the EGG price
-> - [x] Governance should be able to change the price of an egg
-> - [x] Finish the e2e tests
->
-> The following features we said they would be nice to have, but were not required, so i guess they're out of the equation for now...
->
-> - [x] Ants should be able to create/lay eggs once every 10 minutes
-> - [x] Ants should be able to randomly create multiple eggs at a time. The range of how many should be reasonable (0-20?)
-> - [x] Ants have a % chance of dying when creating eggs
->
-> I feel very proud of it, I can't wait to come back from ~~Ibiza~~ Mom's to play it!
+## Marketplace P2P
+- Vendedor define preço livremente em ETH
+- Taxa para listar: 0.001 ETH (não reembolsável)
+- Taxa para comprar: 0.001 ETH
+- Formiga listada vai para escrow (contrato)
+- Formiga listada NÃO pode fazer breeding
+- Vendedor pode cancelar (formiga volta, taxa perdida)
+- Na venda: vendedor recebe (preço - 0.001 ETH)
+- Protocolo recebe: 0.002 ETH por venda completa
 
-Good news is that Robert implemented at least some of this before leaving:
+## Preço Dinâmico
+- Base: 0.01 ETH
+- Sobe: muitas compras em 24h ou alta oferta total
+- Desce: poucas compras em 24h
+- Limites: mínimo 0.005 ETH, máximo 0.05 ETH
+- Fórmula: 70% demanda + 30% oferta total
 
-ANT `ERC721` https://sepolia.etherscan.io/address/0x29b4e177df879de7235498822c69065654ddf00d#code<br/>
-EGG `ERC20`
-https://sepolia.etherscan.io/address/0x3036055a339580bfe30892ab09965f29532d4741#code#code
-
-### Assignment
-
-We would need your help in finishing what Robert started. We hardly think he's going to come back soon, so we should start thinking on hiring somebody to cover his place.
-
-Please clone this repo and as soon as you have gone through the code and implemented the changes you thought were appropriate along with the features, create a pull request and send it to us.
-
-If you have **any** question, please don't hesitate to contact us , we are here for that and we encourage it!
-
-Just in case, Robert seemed a bit distracted when working on the game, it may be a good idea to take a close look at what he did. **There are more than 20 audited issues in the code he's made**, we would appreciate if you can spot them and deploy an improved version of it.
-
-Best of lucks, and get ready to go fully anon and deep **down the rabbit hole**!
-
-#
-
-### Extra points
-
-Oh! And send us as much ANTs as you can to 0x7D4BF49D39374BdDeB2aa70511c2b772a0Bcf91e, we are building an army!
-
-#
-
-### Running the repo
-
-Here's a brief guide as to how run this repo.
-
-First, you make sure you have [foundry](https://github.com/foundry-rs/foundry) on your machine.
-Then clone the repo and run:
-```
-yarn install
-```
-
-That should install all we need. What we need now is an API key from an RPC provider, so create an account in https://www.alchemy.com/ and grab generate an API key. Then you should create a `.env` file and complete it using the `.env.example` file we provide as as a guide.
-
-We highly discourage using accounts that may hold ETH in mainnet, to avoid any unnecessary errors. So even if you have an ETH account, we recommend creating a new one in https://vanity-eth.tk/ for having an badass name like: 0xBadA55ebb20DCf99F56988d2A087C4D2077fa62d.
-If you don't hold ETH in Sepolia, don't worry! People are very generous there, you can head to a faucet: https://sepolia-faucet.pk910.de/ and just ask for some! Crazy huh?
-
-After you have your `.env` all set up, you're ready to go.
-
-#
-
-### Running the tests
-
-```
-yarn test
-```
-
-#
-
-### Deploying the contracts
-
-To deploy and verify the contracts on Sepolia, you can run:
-
-```jsx
-yarn deploy:sepolia
-```
-
-The verification of the contracts may take a couple of minutes, so be aware of that if it seems that your terminal got stuck.
+## Bloqueios
+- Formiga em cooldown: não pode breeding
+- Formiga listada: não pode breeding
+- Formiga listada: não pode transferir

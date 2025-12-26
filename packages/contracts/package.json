@@ -1,0 +1,18 @@
+{
+  "name": "@ants-v2/contracts",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test -vvv",
+    "test:unit": "forge test --match-path 'test/unit/*.t.sol' -vvv",
+    "test:e2e": "forge test --match-path 'test/e2e/*.t.sol' -vvv",
+    "test:fuzz": "forge test --match-path 'test/fuzz/*.t.sol' -vvv",
+    "test:formal": "halmos --contract CryptoAntsFormalTest",
+    "coverage": "forge coverage --report summary --report lcov --match-path 'test/unit/*'",
+    "deploy:local": "bash script/deploy-local.sh",
+    "deploy:sepolia": "forge script Deploy --rpc-url $SEPOLIA_RPC --broadcast --verify",
+    "lint": "solhint 'src/**/*.sol' 'script/**/*.sol' 'test/**/*.sol'",
+    "format": "forge fmt"
+  }
+}

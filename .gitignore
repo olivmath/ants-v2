@@ -1,24 +1,42 @@
 # General
 yarn-error.log
-node_modules
+node_modules/
 .DS_STORE
 .venv
-dapp/
+*.log
+pnpm-lock.yaml
 
-# Foundry files
-cache
-out-via-ir
-lcov.info
-coverage/
+# Foundry files (contracts package)
+packages/contracts/cache/
+packages/contracts/out/
+packages/contracts/out-via-ir/
+packages/contracts/lcov.info
+packages/contracts/coverage/
+packages/contracts/broadcast/
+
+# Frontend (dapp package)
+packages/dapp/.next/
+packages/dapp/out/
+packages/dapp/.cache/
+packages/dapp/build/
+packages/dapp/dist/
+
+# Backend (Envio)
+packages/backend/generated/
+packages/backend/.ponder/
+packages/backend/.envio/
+packages/backend/db/
 
 # Config files
 .env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # Avoid ignoring gitkeep
 !/**/.gitkeep
-
-# Ignore ABIs
-out/*/*
-
-# Deployment info
-broadcast/*/*/*
