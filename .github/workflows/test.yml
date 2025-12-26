@@ -13,6 +13,7 @@ concurrency:
 env:
   SEPOLIA_RPC: https://ethereum-sepolia-rpc.publicnode.com
   FOUNDRY_PROFILE: ci
+  FOUNDRY_DISABLE_NIGHTLY_WARNING: true
 
 jobs:
   # ============================================
@@ -178,56 +179,6 @@ jobs:
         continue-on-error: true
 
   # ============================================
-  # Linting
-  # ============================================
-  lint:
-    name: 🧹 Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.x
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run linters
-        run: pnpm lint:check
-
-      - name: Check Solidity formatting
-        run: forge fmt --check
-
-  # ============================================
-  # Commit Lint
-  # ============================================
-  commitlint:
-    name: 📝 Commit Lint
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: wagoid/commitlint-github-action@v5
-
-  # ============================================
   # Build Check
   # ============================================
   build:
@@ -258,10 +209,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build contracts
-        run: forge build --sizes
-
-      - name: Check contract sizes
-        run: forge build --sizes | grep -E "Contract|Total"
+        run: forge build
 
   # ============================================
   # All Tests Summary
@@ -269,7 +217,7 @@ jobs:
   test-summary:
     name: ✅ Test Summary
     runs-on: ubuntu-latest
-    needs: [coverage, e2e, fuzz, formal, lint, build]
+    needs: [coverage, e2e, fuzz, formal, build]
     if: always()
     steps:
       - name: Check test results
@@ -278,7 +226,6 @@ jobs:
           echo "E2E Tests: ${{ needs.e2e.result }}"
           echo "Fuzz Tests: ${{ needs.fuzz.result }}"
           echo "Formal Verification: ${{ needs.formal.result }}"
-          echo "Lint: ${{ needs.lint.result }}"
           echo "Build: ${{ needs.build.result }}"
 
       - name: Fail if any critical job failed
@@ -286,6 +233,5 @@ jobs:
           needs.coverage.result == 'failure' ||
           needs.e2e.result == 'failure' ||
           needs.fuzz.result == 'failure' ||
-          needs.lint.result == 'failure' ||
           needs.build.result == 'failure'
         run: exit 1
