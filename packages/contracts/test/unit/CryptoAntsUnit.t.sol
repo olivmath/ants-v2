@@ -106,7 +106,7 @@ contract CryptoAntsUnitTest is Test, TestUtils {
     _cryptoAnts.createAnt();
     vm.stopPrank();
 
-    (uint40 lastEggLayTime, uint16 totalEggsLaid, bool isAlive) = _cryptoAnts.antsMetadata(1);
+    (uint40 lastEggLayTime, uint16 totalEggsLaid,,, bool isAlive) = _cryptoAnts.antsMetadata(1);
 
     assertEq(lastEggLayTime, 0);
     assertEq(totalEggsLaid, 0);
@@ -233,14 +233,14 @@ contract CryptoAntsUnitTest is Test, TestUtils {
 
     // Check if ant survived
     try _cryptoAnts.ownerOf(1) {
-      (uint40 lastEggLayTime, uint16 totalEggsLaid, bool isAlive) = _cryptoAnts.antsMetadata(1);
+      (uint40 lastEggLayTime, uint16 totalEggsLaid,,, bool isAlive) = _cryptoAnts.antsMetadata(1);
 
       assertEq(lastEggLayTime, block.timestamp);
       assertGt(totalEggsLaid, 0);
       assertTrue(isAlive);
     } catch {
       // Ant died - metadata should reflect that
-      (,, bool isAlive) = _cryptoAnts.antsMetadata(1);
+      (,,,, bool isAlive) = _cryptoAnts.antsMetadata(1);
       assertFalse(isAlive);
     }
   }

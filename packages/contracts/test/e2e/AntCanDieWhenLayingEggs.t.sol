@@ -59,7 +59,7 @@ contract AntCanDieWhenLayingEggsTest is Test, TestUtils {
         assertEq(eggsAfter, eggsBefore, 'Dead ant should not lay eggs');
 
         // And: ant should be marked as dead
-        (,, bool isAlive) = _cryptoAnts.antsMetadata(1);
+        (,,,, bool isAlive) = _cryptoAnts.antsMetadata(1);
         assertFalse(isAlive, 'Ant should be marked as dead');
 
         break;

@@ -84,13 +84,13 @@ contract CryptoAntsFormalTest is Test, SymTest {
     cryptoAnts.sellAnt(1);
 
     // Check metadata
-    (,, bool isAliveBefore) = cryptoAnts.antsMetadata(1);
+    (,,,, bool isAliveBefore) = cryptoAnts.antsMetadata(1);
 
     // Try any operation (shouldn't revive)
     vm.warp(block.timestamp + 1000);
 
     // Check metadata again
-    (,, bool isAliveAfter) = cryptoAnts.antsMetadata(1);
+    (,,,, bool isAliveAfter) = cryptoAnts.antsMetadata(1);
 
     // INVARIANT: Once dead, always dead
     assert(!isAliveBefore);
@@ -157,7 +157,7 @@ contract CryptoAntsFormalTest is Test, SymTest {
     // Check if ant survived
     try cryptoAnts.ownerOf(1) {
       // Ant alive - get timestamp
-      (uint40 lastEggLayTime,,) = cryptoAnts.antsMetadata(1);
+      (uint40 lastEggLayTime,,,,) = cryptoAnts.antsMetadata(1);
 
       // Try to lay eggs immediately (should fail)
       vm.expectRevert(ICryptoAnts.CooldownNotMet.selector);
