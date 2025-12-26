@@ -69,10 +69,20 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
   uint256 public antsCreated = 0;
   uint256 public constant EGG_LAY_COOLDOWN = 600; // 10 minutes in seconds
 
+  // IPFS base URI for SVG template
+  string public baseTokenURI;
+
   mapping(uint256 => Ant) public antsMetadata;
 
-  constructor(address _eggs) ERC721('Crypto Ants', 'ANTS') Ownable(msg.sender) {
+  constructor(address _eggs, string memory _baseTokenURI) ERC721('Crypto Ants', 'ANTS') Ownable(msg.sender) {
     EGGS = IEgg(_eggs);
+    baseTokenURI = _baseTokenURI;
+  }
+
+  /// @notice Updates the base token URI for metadata
+  /// @param _baseTokenURI New base URI (e.g., IPFS gateway URL)
+  function setBaseTokenURI(string memory _baseTokenURI) external onlyOwner {
+    baseTokenURI = _baseTokenURI;
   }
 
   function setEggPrice(uint256 _price) external onlyOwner {
@@ -229,7 +239,7 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
   }
 
   /// @notice Returns the metadata URI for a given token
-  /// @dev Generates on-chain metadata with dynamic traits
+  /// @dev Returns JSON metadata with IPFS reference for frontend rendering
   /// @param tokenId The token ID to get metadata for
   /// @return The base64-encoded JSON metadata URI
   function tokenURI(uint256 tokenId) public view override returns (string memory) {
@@ -238,13 +248,8 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
     Ant memory ant = antsMetadata[tokenId];
     uint24 displayAntColor = _getDisplayAntColor(ant);
 
-    // Generate dynamic SVG and encode to data URI
-    string memory imageUri = string(
-      abi.encodePacked('data:image/svg+xml;base64,', Base64.encode(bytes(_generateSVG(displayAntColor, ant.eggColor))))
-    );
-
-    // Build complete JSON metadata
-    string memory json = _buildMetadataJSON(tokenId, ant, displayAntColor, imageUri);
+    // Build complete JSON metadata with IPFS reference
+    string memory json = _buildMetadataJSON(tokenId, ant, displayAntColor);
 
     // Encode to base64 and return data URI
     return string(abi.encodePacked('data:application/json;base64,', Base64.encode(bytes(json))));
@@ -267,14 +272,12 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
   /// @param tokenId The token ID
   /// @param ant The ant struct
   /// @param displayAntColor The display color for the ant
-  /// @param imageUri The image data URI
   /// @return The complete JSON metadata string
   function _buildMetadataJSON(
     uint256 tokenId,
     Ant memory ant,
-    uint24 displayAntColor,
-    string memory imageUri
-  ) private pure returns (string memory) {
+    uint24 displayAntColor
+  ) private view returns (string memory) {
     string memory attributes = _buildAttributes(ant, displayAntColor);
 
     return
@@ -290,7 +293,7 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
           ant.isAlive ? 'Alive' : 'Dead',
           '.",',
           '"image":"',
-          imageUri,
+          baseTokenURI,
           '",',
           '"attributes":',
           attributes,
@@ -339,37 +342,5 @@ contract CryptoAnts is ERC721, ICryptoAnts, Ownable, ReentrancyGuard {
     }
 
     return string(result);
-  }
-
-  /// @notice Generates SVG image with ant colors
-  /// @param antColor The ant color (RGB)
-  /// @param eggColor The egg shell color (RGB)
-  /// @return SVG string
-  function _generateSVG(uint24 antColor, uint24 eggColor) private pure returns (string memory) {
-    string memory antColorHex = string(abi.encodePacked('#', _toHexString(antColor)));
-    string memory eggColorHex = string(abi.encodePacked('#', _toHexString(eggColor)));
-
-    return
-      string(
-        abi.encodePacked(
-          '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260">',
-          '<style>.egg-shape{stroke-width:4;}.ant-limbs,.ant-antenna{fill:none;stroke-linecap:round;stroke-linejoin:round;}.ant-limbs{stroke-width:4;}.ant-antenna{stroke-width:3;}.ant-body{stroke:none;}</style>',
-          '<path class="egg-shape" fill="',
-          eggColorHex,
-          '" stroke="',
-          antColorHex,
-          '" d="M100,10 C 50,10 10,80 10,140 C 10,200 50,250 100,250 C 150,250 190,200 190,140 C 190,80 150,10 100,10 Z"/>',
-          '<g transform="translate(50,60)" fill="',
-          antColorHex,
-          '" stroke="',
-          antColorHex,
-          '">',
-          '<g class="ant-limbs"><path d="M48,65 C40,55 25,50 15,55"/><path d="M48,75 C35,75 20,80 10,85"/><path d="M48,85 C40,100 25,115 15,120"/>',
-          '<path d="M52,65 C60,55 75,50 85,55"/><path d="M52,75 C65,75 80,80 90,85"/><path d="M52,85 C60,100 75,115 85,120"/></g>',
-          '<g class="ant-antenna"><path d="M43,30 Q30,10 20,18"/><path d="M57,30 Q70,10 80,18"/></g>',
-          '<g class="ant-body"><circle cx="50" cy="35" r="15"/><ellipse cx="50" cy="72" rx="12" ry="18"/><ellipse cx="50" cy="115" rx="20" ry="28"/></g>',
-          '</g></svg>'
-        )
-      );
   }
 }
